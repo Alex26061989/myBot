@@ -3,14 +3,14 @@ import os
 from telebot import types
 from dotenv import load_dotenv
 
-from config import BOT_TOKEN
+import config
 from categories import TARGET_GROUPS, AGE_GROUPS, TOY_TYPES
 from data import TOYS
 from stats import add_view
 
 load_dotenv()  # загружает переменные из .env файла
 TOKEN = os.getenv('BOT_TOKEN')
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(config.TOKEN)
 
 # состояние пользователей
 user_state = {}

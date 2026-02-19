@@ -1,0 +1,210 @@
+import telebot
+import os
+from telebot import types
+from dotenv import load_dotenv
+
+from config import BOT_TOKEN
+from categories import TARGET_GROUPS, AGE_GROUPS, TOY_TYPES
+from data import TOYS
+from stats import add_view
+
+load_dotenv()  # загружает переменные из .env файла
+TOKEN = os.getenv('BOT_TOKEN')
+bot = telebot.TeleBot(TOKEN)
+
+# состояние пользователей
+user_state = {}
+
+# =========================
+# /start + welcome
+# =========================
+@bot.message_handler(commands=["start"])
+def start(message):
+    chat_id = message.chat.id
+
+    markup = types.ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    markup.add(types.KeyboardButton("🚀 START"))
+
+    bot.send_message(
+        chat_id,
+        "👋 Привет!\n\n"
+        "Я помогу подобрать игрушку для ребёнка 🎁\n\n"
+        "Нажми START, чтобы начать 👇",
+        reply_markup=markup
+    )
+
+# =========================
+# START кнопка
+# =========================
+@bot.message_handler(func=lambda message: message.text == "🚀 START")
+def start_by_button(message):
+    chat_id = message.chat.id
+
+    user_state[chat_id] = {}
+
+    # убираем нижнюю клавиатуру
+    remove_markup = types.ReplyKeyboardRemove()
+
+    bot.send_message(
+       chat_id,
+       "👶 Для кого ищем игрушку?",
+       reply_markup=remove_markup
+    )
+
+    show_target_groups(chat_id)
+
+# =========================
+# 1️⃣ Для кого
+# =========================
+def show_target_groups(chat_id):
+    markup = types.InlineKeyboardMarkup()
+    for code, name in TARGET_GROUPS.items():
+        markup.add(
+            types.InlineKeyboardButton(
+                name,
+                callback_data=f"gender:{code}"
+            )
+        )
+
+    bot.send_message(
+        chat_id,
+        "👶 Для кого ищем игрушку?",
+        reply_markup=markup
+    )
+
+# =========================
+# 2️⃣ Возраст
+# =========================
+def show_age_groups(chat_id):
+    markup = types.InlineKeyboardMarkup()
+    for code, name in AGE_GROUPS.items():
+        markup.add(
+            types.InlineKeyboardButton(
+                name,
+                callback_data=f"age:{code}"
+            )
+        )
+
+    bot.send_message(
+        chat_id,
+        "🎂 Возраст ребёнка:",
+        reply_markup=markup
+    )
+
+# =========================
+# 3️⃣ Тип игрушки
+# =========================
+def show_toy_types(chat_id):
+    markup = types.InlineKeyboardMarkup()
+    for code, name in TOY_TYPES.items():
+        markup.add(
+            types.InlineKeyboardButton(
+                name,
+                callback_data=f"type:{code}"
+            )
+        )
+
+    bot.send_message(
+        chat_id,
+        "🧸 Что ищем?",
+        reply_markup=markup
+    )
+
+# =========================
+# CALLBACKS
+# =========================
+@bot.callback_query_handler(func=lambda call: True)
+def callbacks(call):
+    chat_id = call.message.chat.id
+    data = call.data
+
+    if data.startswith("gender:"):
+        user_state[chat_id]["gender"] = data.split(":")[1]
+        show_age_groups(chat_id)
+
+    elif data.startswith("age:"):
+        user_state[chat_id]["age"] = data.split(":")[1]
+        show_toy_types(chat_id)
+
+    elif data.startswith("type:"):
+        user_state[chat_id]["type"] = data.split(":")[1]
+        show_results(chat_id)
+
+    elif data == "restart":
+        user_state[chat_id] = {}
+        show_target_groups(chat_id)
+
+# =========================
+# РЕЗУЛЬТАТЫ
+# =========================
+def show_results(chat_id):
+    state = user_state.get(chat_id, {})
+
+    results = [
+        toy for toy in TOYS
+        if (
+            state.get("age") in toy.get("age", [])
+            and state.get("type") in toy.get("type", [])
+            and (
+                "all" in toy.get("gender", [])
+                or state.get("gender") in toy.get("gender", [])
+            )
+        )
+    ]
+
+    if not results:
+        bot.send_message(
+            chat_id,
+            "😕 Ничего не нашли, попробуй ещё раз."
+        )
+        show_target_groups(chat_id)
+        return
+
+    for toy in results:
+        add_view(toy["id"])
+
+        text = (
+            f"🧸 <b>{toy['name']}</b>\n\n"
+            f"{toy['description']}\n\n"
+            f"💰 Цена: {toy['price']}"
+        )
+
+        markup = types.InlineKeyboardMarkup()
+        markup.add(
+            types.InlineKeyboardButton(
+                "🛒 Купить",
+                url=toy["link"]
+            )
+        )
+        markup.add(
+            types.InlineKeyboardButton(
+                "🔁 Начать заново",
+                callback_data="restart"
+            )
+        )
+
+        if toy.get("image"):
+            bot.send_photo(
+                chat_id,
+                toy["image"],
+                caption=text,
+                reply_markup=markup,
+                parse_mode="HTML"
+            )
+        else:
+            bot.send_message(
+                chat_id,
+                text,
+                reply_markup=markup,
+                parse_mode="HTML"
+            )
+
+
+# =========================
+# ЗАПУСК
+# =========================
+print("🚀 Бот запущен")
+bot.infinity_polling()

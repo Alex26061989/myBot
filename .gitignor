@@ -1,0 +1,30 @@
+# Виртуальное окружение
+venv/
+env/
+ENV/
+.venv/
+
+# Кэш Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Файлы с секретами
+.env
+.env.local
+.env.*.local
+
+# Базы данных (если есть)
+*.db
+*.sqlite
+*.sqlite3
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Системные файлы
+.DS_Store
+Thumbs.db

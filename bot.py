@@ -7,10 +7,22 @@ import config
 from categories import TARGET_GROUPS, AGE_GROUPS, TOY_TYPES
 from data import TOYS
 from stats import add_view
+from announcer import announce_new_toys
 
 load_dotenv()  # загружает переменные из .env файла
 TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(config.TOKEN)
+
+if __name__ == '__main__':
+    # Сначала проверяем новые товары и отправляем анонсы
+    try:
+        announce_new_toys(bot)
+    except Exception as e:
+        print(f"Ошибка в модуле анонсов: {e}")
+    
+    # Затем запускаем бота
+    print("Бот запущен и готов к работе!")
+    bot.polling(none_stop=True)
 
 # состояние пользователей
 user_state = {}

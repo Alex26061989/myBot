@@ -130,24 +130,50 @@ def show_toy_types(chat_id):
 # =========================
 @bot.callback_query_handler(func=lambda call: True)
 def callbacks(call):
+    import traceback
     chat_id = call.message.chat.id
     data = call.data
-
-    if data.startswith("gender:"):
-        user_state[chat_id]["gender"] = data.split(":")[1]
-        show_age_groups(chat_id)
-
-    elif data.startswith("age:"):
-        user_state[chat_id]["age"] = data.split(":")[1]
-        show_toy_types(chat_id)
-
-    elif data.startswith("type:"):
-        user_state[chat_id]["type"] = data.split(":")[1]
-        show_results(chat_id)
-
-    elif data == "restart":
-        user_state[chat_id] = {}
-        show_target_groups(chat_id)
+    
+    print("="*50)
+    print(f"🔥 ПОЛУЧЕН CALLBACK: {data}")
+    print(f"   от пользователя: {chat_id}")
+    print(f"   время: {__import__('datetime').datetime.now()}")
+    print("="*50)
+    
+    try:
+        if data == "restart":
+            print(f"🔄 ОБРАБОТКА restart для {chat_id}")
+            user_state[chat_id] = {}
+            print(f"   состояние сброшено, вызываю show_target_groups")
+            show_target_groups(chat_id)
+            print(f"   функция show_target_groups вызвана")
+            
+        elif data.startswith("gender:"):
+            gender = data.split(":")[1]
+            print(f"👤 Выбрано gender: {gender}")
+            user_state[chat_id]["gender"] = gender
+            show_age_groups(chat_id)
+            
+        elif data.startswith("age:"):
+            age = data.split(":")[1]
+            print(f"🎂 Выбрано age: {age}")
+            user_state[chat_id]["age"] = age
+            show_toy_types(chat_id)
+            
+        elif data.startswith("type:"):
+            toy_type = data.split(":")[1]
+            print(f"🧸 Выбрано type: {toy_type}")
+            user_state[chat_id]["type"] = toy_type
+            show_results(chat_id)
+            
+        else:
+            print(f"❓ Неизвестный callback: {data}")
+            
+    except Exception as e:
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА:")
+        print(f"   {str(e)}")
+        print(f"   {traceback.format_exc()}")
+        bot.send_message(chat_id, "Произошла ошибка. Напишите /start чтобы продолжить.")
 
 # =========================
 # РЕЗУЛЬТАТЫ

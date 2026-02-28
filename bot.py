@@ -17,6 +17,12 @@ load_dotenv()  # загружает переменные из .env файла
 TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(config.TOKEN)
 
+# Добавь где-нибудь после создания бота
+@bot.message_handler(commands=["test"])
+def test_command(message):
+    print(f"✅ ТЕСТОВАЯ КОМАНДА от {message.chat.id}")
+    bot.reply_to(message, "Бот работает! 🎉")
+
 if __name__ == '__main__':
     # Сначала проверяем новые товары и отправляем анонсы
     try:

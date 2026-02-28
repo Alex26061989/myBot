@@ -10,6 +10,35 @@ from data import TOYS
 CHANNEL_ID = '@KidsWorldInfo' 
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'sent_announcements.json')
 
+# Используем Railway Volume для постоянного хранения
+VOLUME_PATH = '/app/data'  # путь, который мы указали в Volume
+if os.path.exists(VOLUME_PATH):
+    LOG_FILE = os.path.join(VOLUME_PATH, 'sent_announcements.json')
+    print(f"✅ Использую Volume: {LOG_FILE}")
+else:
+    # Для локальной разработки
+    LOG_FILE = os.path.join(os.path.dirname(__file__), 'sent_announcements.json')
+    print(f"⚠️ Volume не найден, использую локальный файл: {LOG_FILE}")
+
+# Проверяем, можем ли писать в Volume
+def check_volume_access():
+    try:
+        # Создаём директорию, если её нет
+        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+        # Пробуем записать тестовый файл
+        test_file = os.path.join(os.path.dirname(LOG_FILE), 'test_write.tmp')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        print(f"✅ Есть доступ к записи в: {os.path.dirname(LOG_FILE)}")
+        return True
+    except Exception as e:
+        print(f"❌ НЕТ ДОСТУПА К ЗАПИСИ: {e}")
+        return False
+
+# Вызываем проверку
+check_volume_access()
+
 def load_sent_items():
     """Загружает список ID уже анонсированных товаров"""
     try:

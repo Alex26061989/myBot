@@ -13,26 +13,9 @@ print("🔥🔥🔥 БОТ ЗАПУСКАЕТСЯ НА RAILWAY")
 print(f"Токен: {config.TOKEN[:10]}... (скрыто)")
 print(f"Время: {__import__('datetime').datetime.now()}")
 
-load_dotenv()  # загружает переменные из .env файла
+load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(config.TOKEN)
-
-# Добавь где-нибудь после создания бота
-@bot.message_handler(commands=["test"])
-def test_command(message):
-    print(f"✅ ТЕСТОВАЯ КОМАНДА от {message.chat.id}")
-    bot.reply_to(message, "Бот работает! 🎉")
-
-if __name__ == '__main__':
-    # Сначала проверяем новые товары и отправляем анонсы
-    try:
-        announce_new_toys(bot)
-    except Exception as e:
-        print(f"Ошибка в модуле анонсов: {e}")
-    
-    # Затем запускаем бота
-    print("Бот запущен и готов к работе!")
-    bot.polling(none_stop=True)
 
 # состояние пользователей
 user_state = {}
@@ -43,20 +26,21 @@ user_state = {}
 @bot.message_handler(commands=["start"])
 def start(message):
     chat_id = message.chat.id
-
-    markup = types.ReplyKeyboardMarkup(
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(types.KeyboardButton("🚀 START"))
-
     bot.send_message(
         chat_id,
-        "👋 Привет!\n\n"
-        "Я помогу подобрать игрушку для ребёнка 🎁\n\n"
-        "Нажми START, чтобы начать 👇",
+        "👋 Привет!\n\nЯ помогу подобрать игрушку для ребёнка 🎁\n\nНажми START, чтобы начать 👇",
         reply_markup=markup
     )
+
+# =========================
+# Тестовая команда
+# =========================
+@bot.message_handler(commands=["test"])
+def test_command(message):
+    print(f"✅ ТЕСТОВАЯ КОМАНДА от {message.chat.id}")
+    bot.reply_to(message, "Бот работает! 🎉")
 
 # =========================
 # START кнопка
@@ -64,18 +48,9 @@ def start(message):
 @bot.message_handler(func=lambda message: message.text == "🚀 START")
 def start_by_button(message):
     chat_id = message.chat.id
-
     user_state[chat_id] = {}
-
-    # убираем нижнюю клавиатуру
     remove_markup = types.ReplyKeyboardRemove()
-
-    bot.send_message(
-       chat_id,
-       "👶 Для кого ищем игрушку?",
-       reply_markup=remove_markup
-    )
-
+    bot.send_message(chat_id, "👶 Для кого ищем игрушку?", reply_markup=remove_markup)
     show_target_groups(chat_id)
 
 # =========================
@@ -84,18 +59,8 @@ def start_by_button(message):
 def show_target_groups(chat_id):
     markup = types.InlineKeyboardMarkup()
     for code, name in TARGET_GROUPS.items():
-        markup.add(
-            types.InlineKeyboardButton(
-                name,
-                callback_data=f"gender:{code}"
-            )
-        )
-
-    bot.send_message(
-        chat_id,
-        "👶 Для кого ищем игрушку?",
-        reply_markup=markup
-    )
+        markup.add(types.InlineKeyboardButton(name, callback_data=f"gender:{code}"))
+    bot.send_message(chat_id, "👶 Для кого ищем игрушку?", reply_markup=markup)
 
 # =========================
 # 2️⃣ Возраст
@@ -103,18 +68,8 @@ def show_target_groups(chat_id):
 def show_age_groups(chat_id):
     markup = types.InlineKeyboardMarkup()
     for code, name in AGE_GROUPS.items():
-        markup.add(
-            types.InlineKeyboardButton(
-                name,
-                callback_data=f"age:{code}"
-            )
-        )
-
-    bot.send_message(
-        chat_id,
-        "🎂 Возраст ребёнка:",
-        reply_markup=markup
-    )
+        markup.add(types.InlineKeyboardButton(name, callback_data=f"age:{code}"))
+    bot.send_message(chat_id, "🎂 Возраст ребёнка:", reply_markup=markup)
 
 # =========================
 # 3️⃣ Тип игрушки
@@ -122,18 +77,8 @@ def show_age_groups(chat_id):
 def show_toy_types(chat_id):
     markup = types.InlineKeyboardMarkup()
     for code, name in TOY_TYPES.items():
-        markup.add(
-            types.InlineKeyboardButton(
-                name,
-                callback_data=f"type:{code}"
-            )
-        )
-
-    bot.send_message(
-        chat_id,
-        "🧸 Что ищем?",
-        reply_markup=markup
-    )
+        markup.add(types.InlineKeyboardButton(name, callback_data=f"type:{code}"))
+    bot.send_message(chat_id, "🧸 Что ищем?", reply_markup=markup)
 
 # =========================
 # CALLBACKS
@@ -154,25 +99,20 @@ def callbacks(call):
         if data == "restart":
             print(f"🔄 ОБРАБОТКА restart для {chat_id}")
             user_state[chat_id] = {}
-            print(f"   состояние сброшено, вызываю show_target_groups")
             show_target_groups(chat_id)
-            print(f"   функция show_target_groups вызвана")
             
         elif data.startswith("gender:"):
             gender = data.split(":")[1]
-            print(f"👤 Выбрано gender: {gender}")
             user_state[chat_id]["gender"] = gender
             show_age_groups(chat_id)
             
         elif data.startswith("age:"):
             age = data.split(":")[1]
-            print(f"🎂 Выбрано age: {age}")
             user_state[chat_id]["age"] = age
             show_toy_types(chat_id)
             
         elif data.startswith("type:"):
             toy_type = data.split(":")[1]
-            print(f"🧸 Выбрано type: {toy_type}")
             user_state[chat_id]["type"] = toy_type
             show_results(chat_id)
             
@@ -180,9 +120,8 @@ def callbacks(call):
             print(f"❓ Неизвестный callback: {data}")
             
     except Exception as e:
-        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА:")
-        print(f"   {str(e)}")
-        print(f"   {traceback.format_exc()}")
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА: {e}")
+        print(traceback.format_exc())
         bot.send_message(chat_id, "Произошла ошибка. Напишите /start чтобы продолжить.")
 
 # =========================
@@ -190,7 +129,6 @@ def callbacks(call):
 # =========================
 def show_results(chat_id):
     state = user_state.get(chat_id, {})
-
     results = [
         toy for toy in TOYS
         if (
@@ -204,55 +142,30 @@ def show_results(chat_id):
     ]
 
     if not results:
-        bot.send_message(
-            chat_id,
-            "😕 Ничего не нашли, попробуй ещё раз."
-        )
+        bot.send_message(chat_id, "😕 Ничего не нашли, попробуй ещё раз.")
         show_target_groups(chat_id)
         return
 
     for toy in results:
         add_view(toy["id"])
-
-        text = (
-            f"🧸 <b>{toy['name']}</b>\n\n"
-            f"{toy['description']}\n\n"
-            f"💰 Цена: {toy['price']}"
-        )
-
+        text = f"🧸 <b>{toy['name']}</b>\n\n{toy['description']}\n\n💰 Цена: {toy['price']}"
         markup = types.InlineKeyboardMarkup()
-        markup.add(
-            types.InlineKeyboardButton(
-                "🛒 Купить",
-                url=toy["link"]
-            )
-        )
-        markup.add(
-            types.InlineKeyboardButton(
-                "🔁 Начать заново",
-                callback_data="restart"
-            )
-        )
+        markup.add(types.InlineKeyboardButton("🛒 Купить", url=toy["link"]))
+        markup.add(types.InlineKeyboardButton("🔁 Начать заново", callback_data="restart"))
 
         if toy.get("image"):
-            bot.send_photo(
-                chat_id,
-                toy["image"],
-                caption=text,
-                reply_markup=markup,
-                parse_mode="HTML"
-            )
+            bot.send_photo(chat_id, toy["image"], caption=text, reply_markup=markup, parse_mode="HTML")
         else:
-            bot.send_message(
-                chat_id,
-                text,
-                reply_markup=markup,
-                parse_mode="HTML"
-            )
-
+            bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML")
 
 # =========================
-# ЗАПУСК
+# ЗАПУСК (ТЕПЕРЬ В САМОМ КОНЦЕ!)
 # =========================
-# print("🚀 Бот запущен")
-# bot.infinity_polling()
+if __name__ == '__main__':
+    try:
+        announce_new_toys(bot)
+    except Exception as e:
+        print(f"Ошибка в модуле анонсов: {e}")
+    
+    print("Бот запущен и готов к работе!")
+    bot.polling(none_stop=True)

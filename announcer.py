@@ -1,14 +1,14 @@
 # announcer.py
 import time
 import json
-# import os
+import os
 from datetime import datetime
-# import telebot
+import telebot
 from data import TOYS
 
 # Настройки
 CHANNEL_ID = '@KidsWorldInfo' 
-LOG_FILE = 'sent_announcements.json'
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'sent_announcements.json')
 
 def load_sent_items():
     """Загружает список ID уже анонсированных товаров"""

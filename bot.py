@@ -9,6 +9,10 @@ from data import TOYS
 from stats import add_view
 from announcer import announce_new_toys
 
+print("🔥🔥🔥 БОТ ЗАПУСКАЕТСЯ НА RAILWAY")
+print(f"Токен: {config.TOKEN[:10]}... (скрыто)")
+print(f"Время: {__import__('datetime').datetime.now()}")
+
 load_dotenv()  # загружает переменные из .env файла
 TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(config.TOKEN)

@@ -1,9 +1,9 @@
 # announcer.py
 import time
 import json
-import os
+# import os
 from datetime import datetime
-import telebot
+# import telebot
 from data import TOYS
 
 # Настройки

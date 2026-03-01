@@ -40,9 +40,13 @@ def check_volume_access():
 check_volume_access()
 
 def load_sent_items():
-    """ВРЕМЕННО: всегда возвращаем пустой список, чтобы отправить всё заново"""
-    print("⚠️ ВРЕМЕННО: сбрасываем историю отправок")
-    return []  # Всегда говорим, что ничего не отправлено
+    """Загружает список ID уже анонсированных товаров"""
+    try:
+        with open(LOG_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return data.get('sent_ids', [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
 def save_sent_items(sent_ids):
     """Сохраняет список анонсированных товаров"""

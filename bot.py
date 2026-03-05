@@ -21,6 +21,22 @@ bot = telebot.TeleBot(config.TOKEN)
 user_state = {}
 
 # =========================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# =========================
+def return_to_menu(chat_id):
+    """Возвращает пользователя в главное меню"""
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = types.KeyboardButton("📋 Поиск по каталогу")
+    btn2 = types.KeyboardButton("🔍 Поиск по слову")
+    markup.add(btn1, btn2)
+    
+    bot.send_message(
+        chat_id,
+        "🏠 Главное меню. Выберите способ поиска:",
+        reply_markup=markup
+    )
+
+# =========================
 # /start + welcome
 # =========================
 @bot.message_handler(commands=["start"])
@@ -54,7 +70,9 @@ def start(message):
         reply_markup=markup
     )    
 
-# Новая функция для показа одного товара
+# =========================
+# Функция для показа одного товара
+# =========================
 def show_single_toy(chat_id, toy):
     add_view(toy["id"])
     text = f"🧸 <b>{toy['name']}</b>\n\n{toy['description']}\n\n💰 Цена: {toy['price']}"
@@ -66,9 +84,120 @@ def show_single_toy(chat_id, toy):
     if toy.get("image"):
         bot.send_photo(chat_id, toy["image"], caption=text, reply_markup=markup, parse_mode="HTML")
     else:
-        bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML") 
+        bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML")
 
+# =========================
+# ОБРАБОТЧИКИ ГЛАВНОГО МЕНЮ
+# =========================
+@bot.message_handler(func=lambda message: message.text == "📋 Поиск по каталогу")
+def catalog_search(message):
+    chat_id = message.chat.id
+    user_state[chat_id] = {}
     
+    # Убираем клавиатуру с кнопками
+    remove_markup = types.ReplyKeyboardRemove()
+    bot.send_message(
+        chat_id,
+        "👶 Для кого ищем игрушку?",
+        reply_markup=remove_markup
+    )
+    
+    show_target_groups(chat_id)
+
+
+@bot.message_handler(func=lambda message: message.text == "🔍 Поиск по слову")
+def word_search(message):
+    chat_id = message.chat.id
+    
+    # Убираем клавиатуру с кнопками
+    remove_markup = types.ReplyKeyboardRemove()
+    
+    msg = bot.send_message(
+        chat_id,
+        "🔍 Введите слово или фразу для поиска\n"
+        "(например: бизиборд, конструктор, кукла, машина, доктор):",
+        reply_markup=remove_markup
+    )
+    bot.register_next_step_handler(msg, process_word_search)
+
+
+def process_word_search(message):
+    chat_id = message.chat.id
+    query = message.text.lower().strip()
+    
+    if len(query) < 2:
+        bot.send_message(chat_id, "⚠️ Слишком короткий запрос. Введите хотя бы 2 буквы.")
+        return_to_menu(chat_id)
+        return
+    
+    # Ищем по названию и описанию
+    results = []
+    for toy in TOYS:
+        # Поиск в названии
+        if query in toy['name'].lower():
+            results.append(toy)
+            continue
+        # Поиск в описании (преобразуем в строку)
+        desc = str(toy['description']).lower()
+        if query in desc:
+            results.append(toy)
+    
+    if not results:
+        bot.send_message(
+            chat_id,
+            f"😕 По запросу '{message.text}' ничего не найдено.\nПопробуйте другие слова."
+        )
+        return_to_menu(chat_id)
+        return
+    
+    # Показываем результаты
+    bot.send_message(
+        chat_id,
+        f"✅ Найдено товаров: {len(results)}. Показываю первые 5:"
+    )
+    
+    # Показываем первые 5 результатов
+    for toy in results[:5]:
+        add_view(toy["id"])
+        
+        # Берём первые 150 символов описания
+        desc = str(toy['description'])
+        if len(desc) > 150:
+            desc = desc[:150] + "..."
+        
+        text = (
+            f"🧸 <b>{toy['name']}</b>\n\n"
+            f"{desc}\n\n"
+            f"💰 Цена: {toy['price']}"
+        )
+        
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("🛒 Купить", url=toy["link"]))
+        
+        if toy.get("image"):
+            bot.send_photo(
+                chat_id,
+                toy["image"],
+                caption=text,
+                reply_markup=markup,
+                parse_mode="HTML"
+            )
+        else:
+            bot.send_message(
+                chat_id,
+                text,
+                reply_markup=markup,
+                parse_mode="HTML"
+            )
+    
+    if len(results) > 5:
+        bot.send_message(
+            chat_id,
+            f"... и ещё {len(results) - 5} товаров. Уточните запрос для более точного поиска."
+        )
+    
+    # Возвращаем в меню
+    return_to_menu(chat_id)
 
 # =========================
 # Тестовая команда
@@ -77,17 +206,6 @@ def show_single_toy(chat_id, toy):
 def test_command(message):
     print(f"✅ ТЕСТОВАЯ КОМАНДА от {message.chat.id}")
     bot.reply_to(message, "Бот работает! 🎉")
-
-# =========================
-# START кнопка
-# =========================
-@bot.message_handler(func=lambda message: message.text == "🚀 START")
-def start_by_button(message):
-    chat_id = message.chat.id
-    user_state[chat_id] = {}
-    remove_markup = types.ReplyKeyboardRemove()
-    bot.send_message(chat_id, "👶 Для кого ищем игрушку?", reply_markup=remove_markup)
-    show_target_groups(chat_id)
 
 # =========================
 # 1️⃣ Для кого
@@ -179,7 +297,7 @@ def show_results(chat_id):
 
     if not results:
         bot.send_message(chat_id, "😕 Ничего не нашли, попробуй ещё раз.")
-        show_target_groups(chat_id)
+        return_to_menu(chat_id)  # Возвращаем в меню
         return
 
     for toy in results:
@@ -193,9 +311,12 @@ def show_results(chat_id):
             bot.send_photo(chat_id, toy["image"], caption=text, reply_markup=markup, parse_mode="HTML")
         else:
             bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML")
+    
+    # После показа результатов возвращаем в меню
+    return_to_menu(chat_id)
 
 # =========================
-# ЗАПУСК (ТЕПЕРЬ В САМОМ КОНЦЕ!)
+# ЗАПУСК (В САМОМ КОНЦЕ!)
 # =========================
 if __name__ == '__main__':
     try:
@@ -205,3 +326,4 @@ if __name__ == '__main__':
     
     print("Бот запущен и готов к работе!")
     bot.polling(none_stop=True)
+    

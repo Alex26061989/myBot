@@ -919,7 +919,7 @@ TOYS = [
             "Научит юных гениев работать отверткой и гаечным ключом."
             },
         "price": "от 982 руб",
-        "age": ["5-7", "7=9", "9-12", "12+"],
+        "age": ["5-7", "7-9", "9-12", "12+"],
         "gender": ["boy", "all"],
         "type": ["construction", "logic"],
         "image": "https://avatars.mds.yandex.net/get-mpic/5232180/img_id2261998817850605776.jpeg/optimize",
@@ -937,7 +937,7 @@ TOYS = [
             "будь то День рождения, Новый год, Рождество, 23 февраля, 8 марта или просто без повода."           
             },
         "price": "от 1630 руб",
-        "age": ["5-7", "7=9", "9-12", "12+"],
+        "age": ["5-7", "7-9", "9-12", "12+"],
         "gender": ["boy", "all"],
         "type": ["construction", "logic"],
         "image": "https://avatars.mds.yandex.net/get-mpic/16902283/2a0000019c72903893c4ebb1210da1449ce4/optimize",
@@ -1028,7 +1028,7 @@ TOYS = [
             "Развивает баланс, тренирует мышцы ног и спины, учит уверенности и самостоятельности."
             },
         "price": "от 1979 руб",
-        "age": ["1-3"],
+        "age": ["1-3", "3-5"],
         "gender": ["boy", "all"],
         "type": ["movement"],
         "image": "https://avatars.mds.yandex.net/get-mpic/11401947/img_id9143970762998801029.jpeg/optimize",
@@ -1048,7 +1048,7 @@ TOYS = [
             "Развивает баланс, тренирует мышцы ног и спины, учит уверенности и самостоятельности."
             },
         "price": "от 3127 руб",
-        "age": ["1-3"],
+        "age": ["1-3", "3-5"],
         "gender": ["girl", "all"],
         "type": ["movement"],
         "image": "https://avatars.mds.yandex.net/get-mpic/12798639/2a000001977947b0f70e84bed3a886e53e62/optimize",
@@ -1068,7 +1068,7 @@ TOYS = [
             "Развивает баланс, тренирует мышцы ног и спины, учит уверенности и самостоятельности."
             },
         "price": "от 1996 руб",
-        "age": ["1-3"],
+        "age": ["1-3", "3-5"],
         "gender": ["boy", "girl", "all"],
         "type": ["movement"],
         "image": "https://avatars.mds.yandex.net/get-mpic/11378054/2a000001977942e8e052890920dce8698fc2/optimize",

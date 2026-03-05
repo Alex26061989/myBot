@@ -87,14 +87,29 @@ def create_announcement_message(toy):
     message = f"<b>🆕 НОВИНКА В НАШЕМ КАТАЛОГЕ!</b>\n\n"
     message += f"<b>{toy['name']}</b>\n\n"
     
-    # Описание (первые 200 символов)
-    if isinstance(toy['description'], dict):
-        desc = list(toy['description'].values())[0]
-    else:
-        desc = str(toy['description'])
+    # Описание (первые 200 символов) с защитой от ошибок
+    try:
+        if isinstance(toy['description'], dict):
+            # Если описание - словарь, берём первое значение
+            desc_values = list(toy['description'].values())
+            desc = str(desc_values[0]) if desc_values else ""
+        elif isinstance(toy['description'], list):
+            # Если описание - список, объединяем
+            desc = " ".join([str(item) for item in toy['description']])
+        else:
+            # Если описание - строка или что-то ещё
+            desc = str(toy['description'])
     
-    short_desc = desc[:200] + "..." if len(desc) > 200 else desc
-    message += f"<i>{short_desc}</i>\n\n"
+        # Обрезаем до 200 символов
+        if len(desc) > 200:
+            short_desc = desc[:200] + "..."
+        else:
+            short_desc = desc
+    
+        message += f"<i>{short_desc}</i>\n\n"
+    except Exception as e:
+        print(f"⚠️ Ошибка при обработке описания: {e}")
+        message += f"<i>Описание временно недоступно</i>\n\n"
     
     # Характеристики
     message += f"💰 <b>Цена:</b> {format_price(toy['price'])}\n"
@@ -147,6 +162,10 @@ def announce_new_toys(bot):
         try:
             # Создаем сообщение
             message = create_announcement_message(toy)
+
+            # Отладка
+            print(f"🔧 Создаю сообщение для товара ID {toy['id']}")
+            print(f"   Тип description: {type(toy['description'])}")
             
             # Отправляем в канал
             if toy.get('image'):

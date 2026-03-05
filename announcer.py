@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import telebot
 from data import TOYS
+from categories import TOY_TYPES
 
 # Настройки
 CHANNEL_ID = '@KidsWorldInfo' 
@@ -98,11 +99,13 @@ def create_announcement_message(toy):
     # Характеристики
     message += f"💰 <b>Цена:</b> {format_price(toy['price'])}\n"
     message += f"{age_icon} <b>Возраст:</b> {', '.join(toy['age'])} лет\n"
-    message += f"{type_icon} <b>Категория:</b> {', '.join(toy['type'])}\n\n"
+    category_names = [TOY_TYPES.get(t, t) for t in toy['type']]
+    message += f"{type_icon} <b>Категория:</b> {', '.join(category_names)}\n\n"
     
     # Кнопка для перехода в бота
     message += f"👇 <b>Забрать игрушку можно в нашем боте:</b>\n"
-    message += f"👉 <a href='https://t.me/ToyChoiseBot'>@ToyChoiseBot</a>\n\n"
+    toy_link = f"https://t.me/ToyChoiseBot?start=toy_{toy['id']}"
+    message += f"👉 <a href='{toy_link}'>Перейти к товару в боте</a>\n\n"
     
     # Хэштеги
     hashtags = [f"#{t}" for t in toy['type']]

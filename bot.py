@@ -28,11 +28,29 @@ def start(message):
     chat_id = message.chat.id
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add(types.KeyboardButton("🚀 START"))
+    markup.add(types.KeyboardButton("🔍 Поиск"))
     bot.send_message(
         chat_id,
         "👋 Привет!\n\nЯ помогу подобрать игрушку для ребёнка 🎁\n\nНажми START, чтобы начать 👇",
         reply_markup=markup
     )
+@bot.message_handler(func=lambda message: message.text == "🔍 Поиск")
+def search_button(message):
+    search_command(message)    
+
+# Новая функция для показа одного товара
+def show_single_toy(chat_id, toy):
+    add_view(toy["id"])
+    text = f"🧸 <b>{toy['name']}</b>\n\n{toy['description']}\n\n💰 Цена: {toy['price']}"
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🛒 Купить", url=toy["link"]))
+    markup.add(types.InlineKeyboardButton("🔁 Начать заново", callback_data="restart"))
+    
+    if toy.get("image"):
+        bot.send_photo(chat_id, toy["image"], caption=text, reply_markup=markup, parse_mode="HTML")
+    else:
+        bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML")    
 
 # =========================
 # Тестовая команда
@@ -41,6 +59,66 @@ def start(message):
 def test_command(message):
     print(f"✅ ТЕСТОВАЯ КОМАНДА от {message.chat.id}")
     bot.reply_to(message, "Бот работает! 🎉")
+
+# =================
+# Поисковая команда    
+# =================
+@bot.message_handler(commands=["search"])
+def search_command(message):
+    chat_id = message.chat.id
+    msg = bot.send_message(
+        chat_id,
+        "🔍 Введите слово или фразу для поиска (например: бизиборд, конструктор, кукла):"
+    )
+    bot.register_next_step_handler(msg, process_search)
+
+def process_search(message):
+    chat_id = message.chat.id
+    query = message.text.lower().strip()
+    
+    if len(query) < 2:
+        bot.send_message(chat_id, "Слишком короткий запрос. Введите хотя бы 2 буквы.")
+        return
+    
+    # Ищем по названию и описанию
+    results = []
+    for toy in TOYS:
+        # Поиск в названии
+        if query in toy['name'].lower():
+            results.append(toy)
+            continue
+        # Поиск в описании
+        desc = str(toy['description']).lower()
+        if query in desc:
+            results.append(toy)
+    
+    if not results:
+        bot.send_message(
+            chat_id,
+            f"😕 По запросу '{message.text}' ничего не найдено.\nПопробуйте другие слова."
+        )
+        return
+    
+    # Показываем результаты
+    bot.send_message(chat_id, f"✅ Найдено товаров: {len(results)}")
+    
+    for toy in results[:5]:  # Показываем первые 5, чтобы не спамить
+        add_view(toy["id"])
+        text = f"🧸 <b>{toy['name']}</b>\n\n{toy['description']}\n\n💰 Цена: {toy['price']}"
+        
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("🛒 Купить", url=toy["link"]))
+        
+        if toy.get("image"):
+            bot.send_photo(chat_id, toy["image"], caption=text, reply_markup=markup, parse_mode="HTML")
+        else:
+            bot.send_message(chat_id, text, reply_markup=markup, parse_mode="HTML")
+    
+    if len(results) > 5:
+        bot.send_message(
+            chat_id,
+            f"... и ещё {len(results) - 5} товаров. Уточните запрос для более точного поиска."
+        )
 
 # =========================
 # START кнопка

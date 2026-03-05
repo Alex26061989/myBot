@@ -63,71 +63,106 @@ def format_price(price):
     return price.replace('от ', 'от ').replace('руб', '₽')
 
 def create_announcement_message(toy):
-    """Создает красивое сообщение для канала"""
+    """Создает красивое сообщение для канала с защитой от любых ошибок"""
     
-    # Определяем иконку по возрасту
-    age_icon = "👶" if "0-1" in toy['age'] else "🧒" if "1-3" in toy['age'] else "👦"
+    print(f"🔧 Создаю сообщение для товара ID {toy['id']}")
     
-    # Определяем категорию по типу
-    type_icons = {
-        'logic': '🧩',
-        'learning': '📚',
-        'construction': '🏗️',
-        'creativity': '🎨',
-        'movement': '🏃',
-        'music': '🎵',
-        'profession': '👨‍⚕️'
-    }
-    
-    # Собираем иконки для всех типов игрушки
-    icons = [type_icons.get(t, '🎁') for t in toy['type']]
-    type_icon = ' '.join(icons[:3])  # берем первые 3 типа
-    
-    # Формируем сообщение
-    message = f"<b>🆕 НОВИНКА В НАШЕМ КАТАЛОГЕ!</b>\n\n"
-    message += f"<b>{toy['name']}</b>\n\n"
-    
-    # Описание (первые 200 символов) с защитой от ошибок
     try:
-        if isinstance(toy['description'], dict):
-            # Если описание - словарь, берём первое значение
-            desc_values = list(toy['description'].values())
-            desc = str(desc_values[0]) if desc_values else ""
-        elif isinstance(toy['description'], list):
-            # Если описание - список, объединяем
-            desc = " ".join([str(item) for item in toy['description']])
-        else:
-            # Если описание - строка или что-то ещё
-            desc = str(toy['description'])
-    
+        # ===== БЕЗОПАСНОЕ ПОЛУЧЕНИЕ ОПИСАНИЯ =====
+        desc_text = ""
+        try:
+            if 'description' not in toy:
+                desc_text = "Описание отсутствует"
+                print("⚠️ Поле description отсутствует")
+            elif isinstance(toy['description'], dict):
+                # Если словарь - берём значения
+                values = list(toy['description'].values())
+                desc_text = ' '.join([str(v) for v in values if v])
+                print(f"📝 Описание из словаря, значений: {len(values)}")
+            elif isinstance(toy['description'], list):
+                # Если список - объединяем
+                desc_text = ' '.join([str(item) for item in toy['description'] if item])
+                print(f"📝 Описание из списка, элементов: {len(toy['description'])}")
+            elif isinstance(toy['description'], str):
+                # Если строка - используем как есть
+                desc_text = toy['description']
+                print(f"📝 Описание из строки, длина: {len(desc_text)}")
+            else:
+                # Если что-то другое - преобразуем в строку
+                desc_text = str(toy['description'])
+                print(f"📝 Описание из {type(toy['description'])}")
+        except Exception as e:
+            print(f"⚠️ Ошибка при извлечении описания: {e}")
+            desc_text = "Описание временно недоступно"
+        
         # Обрезаем до 200 символов
-        if len(desc) > 200:
-            short_desc = desc[:200] + "..."
+        if len(desc_text) > 200:
+            short_desc = desc_text[:200] + "..."
         else:
-            short_desc = desc
-    
+            short_desc = desc_text
+        
+        # ===== БЕЗОПАСНОЕ ПОЛУЧЕНИЕ ИНФОРМАЦИИ =====
+        # Название
+        name = str(toy.get('name', 'Без названия'))
+        
+        # Цена
+        price = str(toy.get('price', 'Цена не указана'))
+        price = price.replace('от ', 'от ').replace('руб', '₽')
+        
+        # Возраст
+        age_list = toy.get('age', [])
+        if isinstance(age_list, list):
+            age_str = ', '.join([str(a) for a in age_list])
+        else:
+            age_str = str(age_list)
+        
+        # Типы
+        type_list = toy.get('type', [])
+        if isinstance(type_list, list):
+            type_str = ', '.join([str(t) for t in type_list])
+        else:
+            type_str = str(type_list)
+        
+        # Иконка возраста
+        if "0-1" in age_str:
+            age_icon = "👶"
+        elif "1-3" in age_str:
+            age_icon = "🧒"
+        else:
+            age_icon = "👦"
+        
+        # ===== ФОРМИРУЕМ СООБЩЕНИЕ =====
+        message = f"<b>🆕 НОВИНКА В НАШЕМ КАТАЛОГЕ!</b>\n\n"
+        message += f"<b>{name}</b>\n\n"
         message += f"<i>{short_desc}</i>\n\n"
+        message += f"💰 <b>Цена:</b> {price}\n"
+        message += f"{age_icon} <b>Возраст:</b> {age_str} лет\n"
+        message += f"🎁 <b>Категория:</b> {type_str}\n\n"
+        
+        # Ссылка на бота с конкретным товаром
+        toy_link = f"https://t.me/ToyChoiseBot?start=toy_{toy['id']}"
+        message += f"👇 <b>Забрать игрушку можно в нашем боте:</b>\n"
+        message += f"👉 <a href='{toy_link}'>Перейти к товару</a>\n\n"
+        
+        # Хэштеги
+        hashtags = []
+        if isinstance(type_list, list):
+            for t in type_list[:3]:  # первые 3 типа
+                hashtags.append(f"#{t}")
+        if age_list and len(age_list) > 0:
+            hashtags.append(f"#{age_list[0]}")
+        message += " ".join(hashtags)
+        
+        print(f"✅ Сообщение создано успешно для ID {toy['id']}")
+        return message
+        
     except Exception as e:
-        print(f"⚠️ Ошибка при обработке описания: {e}")
-        message += f"<i>Описание временно недоступно</i>\n\n"
-    
-    # Характеристики
-    message += f"💰 <b>Цена:</b> {format_price(toy['price'])}\n"
-    message += f"{age_icon} <b>Возраст:</b> {', '.join(toy['age'])} лет\n"
-    category_names = [TOY_TYPES.get(t, t) for t in toy['type']]
-    message += f"{type_icon} <b>Категория:</b> {', '.join(category_names)}\n\n"
-    
-    # Кнопка для перехода в бота
-    message += f"👇 <b>Забрать игрушку можно в нашем боте:</b>\n"
-    toy_link = f"https://t.me/ToyChoiseBot?start=toy_{toy['id']}"
-    message += f"👉 <a href='{toy_link}'>Перейти к товару в боте</a>\n\n"
-    
-    # Хэштеги
-    hashtags = [f"#{t}" for t in toy['type']]
-    hashtags.append(f"#{toy['age'][0].replace('-', '_')}")
-    message += " ".join(hashtags)
-    
-    return message
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА в create_announcement_message: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Возвращаем минимальное сообщение в случае ошибки
+        return f"<b>🆕 НОВИНКА!</b>\n\n{toy.get('name', 'Товар')}\n\n👉 https://t.me/ToyChoiseBot?start=toy_{toy['id']}"
 
 def announce_new_toys(bot):
     """Основная функция для анонсирования новых товаров с защитой от лимитов"""
